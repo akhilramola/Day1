@@ -1,0 +1,12 @@
+{
+    "drinkType": "latte",
+    "size": "medium",
+    "milk": "oat",
+    "extras": [
+        "extra shot",
+        "vanilla"
+    ],
+    "name": "TestCustomer",
+    "timestamp": "2025-11-23T13:06:23.846388",
+    "session_id": "session_20251123_130623"
+}
