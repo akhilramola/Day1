@@ -1,0 +1,50 @@
+[
+    {
+        "id": "select_where",
+        "title": "SELECT & WHERE",
+        "summary": "The SELECT statement is used to query data from a database. The WHERE clause allows filtering of rows based on conditions. In SQL, you should avoid `SELECT *` for performance reasons. Filters (WHERE) should be applied early to reduce the data scanned. :contentReference[oaicite:0]{index=0}",
+        "sample_question": "What is a SELECT statement? How is the WHERE clause used in SQL?"
+    },
+    {
+        "id": "joins",
+        "title": "SQL Joins",
+        "summary": "Joins combine rows from two or more tables based on related columns (keys). Common types include INNER JOIN, LEFT JOIN, RIGHT JOIN, and FULL JOIN. Using the right type of join is essential depending on whether you want matching rows only (INNER) or all rows from one side (LEFT/RIGHT). :contentReference[oaicite:1]{index=1}",
+        "sample_question": "Explain the differences between INNER, LEFT, RIGHT, and FULL JOIN in SQL."
+    },
+    {
+        "id": "group_by_having",
+        "title": "Aggregation, GROUP BY & HAVING",
+        "summary": "GROUP BY is used to group rows that share the same values in specified columns for aggregation (like SUM, COUNT). HAVING is used to filter results *after* aggregation. You cannot use the WHERE clause to filter aggregated values. :contentReference[oaicite:2]{index=2}",
+        "sample_question": "When would you use GROUP BY and HAVING in a query? Give an example."
+    },
+    {
+        "id": "subqueries",
+        "title": "Subqueries",
+        "summary": "A subquery is a query nested inside another query (SELECT, FROM, or WHERE). A correlated subquery references the outer query, meaning it runs for each row of the parent query. :contentReference[oaicite:3]{index=3}",
+        "sample_question": "What is a correlated subquery? Provide an example."
+    },
+    {
+        "id": "window_functions",
+        "title": "Window Functions",
+        "summary": "Window functions perform calculations across a set of rows related to the current row without collapsing results. They use the `OVER` clause. Unlike aggregate functions, window functions return a value for each row (e.g. running total, ranking). :contentReference[oaicite:4]{index=4}",
+        "sample_question": "How do window functions differ from aggregation functions? Explain with an example."
+    },
+    {
+        "id": "ctes_recursive",
+        "title": "Common Table Expressions (CTEs) / Recursive Queries",
+        "summary": "A CTE is a temporary, named result set which you define using `WITH` and can be referenced in a query. Recursive CTEs let a CTE refer to itself, useful for hierarchical data. :contentReference[oaicite:5]{index=5}",
+        "sample_question": "What is a recursive CTE in SQL? How would you use it for hierarchical data?"
+    },
+    {
+        "id": "index_optimization",
+        "title": "Indexing & Query Optimization",
+        "summary": "Indexes are used to speed up data retrieval in databases. Proper indexes (e.g. on WHERE and JOIN columns) can greatly improve performance. Also, best practices: avoid `SELECT *`, filter early, analyze execution plans. :contentReference[oaicite:6]{index=6}",
+        "sample_question": "Why are indexes important in SQL? What\u2019s the difference between an index and a key?"
+    },
+    {
+        "id": "normalization",
+        "title": "Normalization & Database Design",
+        "summary": "Normalization is the process of organizing data to reduce redundancy. Common normal forms: 1NF, 2NF, 3NF. Good design helps maintain data integrity and performance. :contentReference[oaicite:7]{index=7}",
+        "sample_question": "Explain the first three normal forms (1NF, 2NF, 3NF) in database design."
+    }
+]
