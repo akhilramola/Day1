@@ -1,22 +1,20 @@
 # ======================================================
-# 🌿 DAILY WELLNESS VOICE COMPANION
-# 💼 Professional Voice AI Development Course
-# 🚀 Context-Aware Agents & JSON Persistence
+# 🧠 DAY 4: TEACH-THE-TUTOR (SQL EDITION)
+# 👨‍💻 Tutorial by Akhil Ramola
+# 🚀 Features: SELECT, Joins, Aggregation, Window Functions, CTE & Optimization
 # ======================================================
 
 import logging
 import json
 import os
 import asyncio
-from datetime import datetime
-from typing import Annotated, Literal, List, Optional
-from dataclasses import dataclass, field, asdict
+from typing import Annotated, Literal, Optional
+from dataclasses import dataclass
 
-print("\n" + "🌿" * 50)
-print("🚀 WELLNESS COMPANION - TUTORIAL BY Akhil Chand Ramola")
-print("")
+print("\n" + "📊" * 50)
+print("🚀 SQL TUTOR - DAY 4 TUTORIAL")
 print("💡 agent.py LOADED SUCCESSFULLY!")
-print("🌿" * 50 + "\n")
+print("📊" * 50 + "\n")
 
 from dotenv import load_dotenv
 from pydantic import Field
@@ -28,12 +26,11 @@ from livekit.agents import (
     RoomInputOptions,
     WorkerOptions,
     cli,
-    metrics,
-    MetricsCollectedEvent,
-    RunContext,
     function_tool,
+    RunContext,
 )
 
+# 🔌 PLUGINS
 from livekit.plugins import murf, silero, google, deepgram, noise_cancellation
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
@@ -41,177 +38,208 @@ logger = logging.getLogger("agent")
 load_dotenv(".env.local")
 
 # ======================================================
-# 🧠 STATE MANAGEMENT & DATA STRUCTURES
+# 📚 KNOWLEDGE BASE (SQL DATA)
+# ======================================================
+
+CONTENT_FILE = "sql_content.json"
+
+DEFAULT_CONTENT = [
+    {
+      "id": "select_where",
+      "title": "SELECT & WHERE",
+      "summary": "The SELECT statement is used to query data from a database. The WHERE clause allows filtering of rows based on conditions. " +
+                 "In SQL, you should avoid `SELECT *` for performance reasons. Filters (WHERE) should be applied early to reduce the data scanned. " +
+                 ":contentReference[oaicite:0]{index=0}",
+      "sample_question": "What is a SELECT statement? How is the WHERE clause used in SQL?"
+    },
+    {
+      "id": "joins",
+      "title": "SQL Joins",
+      "summary": "Joins combine rows from two or more tables based on related columns (keys). Common types include INNER JOIN, LEFT JOIN, RIGHT JOIN, and FULL JOIN. " +
+                 "Using the right type of join is essential depending on whether you want matching rows only (INNER) or all rows from one side (LEFT/RIGHT). " +
+                 ":contentReference[oaicite:1]{index=1}",
+      "sample_question": "Explain the differences between INNER, LEFT, RIGHT, and FULL JOIN in SQL."
+    },
+    {
+      "id": "group_by_having",
+      "title": "Aggregation, GROUP BY & HAVING",
+      "summary": "GROUP BY is used to group rows that share the same values in specified columns for aggregation (like SUM, COUNT). " +
+                 "HAVING is used to filter results *after* aggregation. You cannot use the WHERE clause to filter aggregated values. " +
+                 ":contentReference[oaicite:2]{index=2}",
+      "sample_question": "When would you use GROUP BY and HAVING in a query? Give an example."
+    },
+    {
+      "id": "subqueries",
+      "title": "Subqueries",
+      "summary": "A subquery is a query nested inside another query (SELECT, FROM, or WHERE). " +
+                 "A correlated subquery references the outer query, meaning it runs for each row of the parent query. " +
+                 ":contentReference[oaicite:3]{index=3}",
+      "sample_question": "What is a correlated subquery? Provide an example."
+    },
+    {
+      "id": "window_functions",
+      "title": "Window Functions",
+      "summary": "Window functions perform calculations across a set of rows related to the current row without collapsing results. They use the `OVER` clause. " +
+                 "Unlike aggregate functions, window functions return a value for each row (e.g. running total, ranking). " +
+                 ":contentReference[oaicite:4]{index=4}",
+      "sample_question": "How do window functions differ from aggregation functions? Explain with an example."
+    },
+    {
+      "id": "ctes_recursive",
+      "title": "Common Table Expressions (CTEs) / Recursive Queries",
+      "summary": "A CTE is a temporary, named result set which you define using `WITH` and can be referenced in a query. Recursive CTEs let a CTE refer to itself, useful for hierarchical data. " +
+                 ":contentReference[oaicite:5]{index=5}",
+      "sample_question": "What is a recursive CTE in SQL? How would you use it for hierarchical data?"
+    },
+    {
+      "id": "index_optimization",
+      "title": "Indexing & Query Optimization",
+      "summary": "Indexes are used to speed up data retrieval in databases. Proper indexes (e.g. on WHERE and JOIN columns) can greatly improve performance. " +
+                 "Also, best practices: avoid `SELECT *`, filter early, analyze execution plans. " +
+                 ":contentReference[oaicite:6]{index=6}",
+      "sample_question": "Why are indexes important in SQL? What’s the difference between an index and a key?"
+    },
+    {
+      "id": "normalization",
+      "title": "Normalization & Database Design",
+      "summary": "Normalization is the process of organizing data to reduce redundancy. Common normal forms: 1NF, 2NF, 3NF. Good design helps maintain data integrity and performance. " +
+                 ":contentReference[oaicite:7]{index=7}",
+      "sample_question": "Explain the first three normal forms (1NF, 2NF, 3NF) in database design."
+    }
+]
+
+def load_content():
+    try:
+        path = os.path.join(os.path.dirname(__file__), CONTENT_FILE)
+        if not os.path.exists(path):
+            print(f"⚠️ {CONTENT_FILE} not found. Generating SQL data...")
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(DEFAULT_CONTENT, f, indent=4)
+            print("✅ SQL content file created successfully.")
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data
+    except Exception as e:
+        print(f"⚠️ Error managing content file: {e}")
+        return []
+
+COURSE_CONTENT = load_content()
+
+# ======================================================
+# 🧠 STATE MANAGEMENT
 # ======================================================
 
 @dataclass
-class CheckInState:
-    """🌿 Holds data for the CURRENT daily check-in"""
-    mood: str | None = None
-    energy: str | None = None
-    objectives: list[str] = field(default_factory=list)
-    advice_given: str | None = None
-    
-    def is_complete(self) -> bool:
-        """✅ Check if we have the core check-in data"""
-        return all([
-            self.mood is not None,
-            self.energy is not None,
-            len(self.objectives) > 0
-        ])
-    
-    def to_dict(self) -> dict:
-        return asdict(self)
+class TutorState:
+    current_topic_id: Optional[str] = None
+    current_topic_data: Optional[dict] = None
+    mode: Literal["learn", "quiz", "teach_back"] = "learn"
+
+    def set_topic(self, topic_id: str):
+        topic = next((item for item in COURSE_CONTENT if item["id"] == topic_id), None)
+        if topic:
+            self.current_topic_id = topic_id
+            self.current_topic_data = topic
+            return True
+        return False
 
 @dataclass
 class Userdata:
-    """👤 User session data passed to the agent"""
-    current_checkin: CheckInState
-    history_summary: str  # String containing info about previous sessions
-    session_start: datetime = field(default_factory=datetime.now)
+    tutor_state: TutorState
+    agent_session: Optional[AgentSession] = None
 
 # ======================================================
-# 💾 PERSISTENCE LAYERS (JSON LOGGING)
-# ======================================================
-WELLNESS_LOG_FILE = "wellness_log.json"
-
-def get_log_path():
-    base_dir = os.path.dirname(__file__)
-    backend_dir = os.path.abspath(os.path.join(base_dir, ".."))
-    return os.path.join(backend_dir, WELLNESS_LOG_FILE)
-
-def load_history() -> list:
-    """📖 Read previous check-ins from JSON"""
-    path = get_log_path()
-    if not os.path.exists(path):
-        return []
-    try:
-        with open(path, "r", encoding='utf-8') as f:
-            data = json.load(f)
-            return data if isinstance(data, list) else []
-    except Exception as e:
-        print(f"⚠️ Could not load history: {e}")
-        return []
-
-def save_checkin_entry(entry: CheckInState) -> None:
-    """💾 Append new check-in to the JSON list"""
-    path = get_log_path()
-    history = load_history()
-    
-    # Create record
-    record = {
-        "timestamp": datetime.now().isoformat(),
-        "mood": entry.mood,
-        "energy": entry.energy,
-        "objectives": entry.objectives,
-        "summary": entry.advice_given
-    }
-    
-    history.append(record)
-    
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding='utf-8') as f:
-        json.dump(history, f, indent=4, ensure_ascii=False)
-        
-    print(f"\n✅ CHECK-IN SAVED TO {path}")
-
-# ======================================================
-# 🛠️ WELLNESS AGENT TOOLS
+# 🛠️ TUTOR TOOLS
 # ======================================================
 
 @function_tool
-async def record_mood_and_energy(
+async def select_topic(
     ctx: RunContext[Userdata],
-    mood: Annotated[str, Field(description="The user's emotional state (e.g., happy, stressed, anxious)")],
-    energy: Annotated[str, Field(description="The user's energy level (e.g., high, low, drained, energetic)")],
+    topic_id: Annotated[str, Field(description="The ID of the SQL topic to study (e.g., 'joins', 'window_functions')")]
 ) -> str:
-    """📝 Record how the user is feeling. Call this after the user describes their state."""
-    ctx.userdata.current_checkin.mood = mood
-    ctx.userdata.current_checkin.energy = energy
-    
-    print(f"📊 MOOD LOGGED: {mood} | ENERGY: {energy}")
-    
-    return f"I've noted that you are feeling {mood} with {energy} energy. I'm listening."
+    state = ctx.userdata.tutor_state
+    success = state.set_topic(topic_id.lower())
+
+    if success:
+        return f"Topic set to **{state.current_topic_data['title']}**. Do you want to 'Learn', be 'Quizzed', or 'Teach it back'?"
+    else:
+        available = ", ".join([t["id"] for t in COURSE_CONTENT])
+        return f"Topic not found. Available topics are: {available}"
 
 @function_tool
-async def record_objectives(
+async def set_learning_mode(
     ctx: RunContext[Userdata],
-    objectives: Annotated[list[str], Field(description="List of 1-3 specific goals the user wants to achieve today")],
+    mode: Annotated[str, Field(description="The mode: 'learn', 'quiz', or 'teach_back'")]
 ) -> str:
-    """🎯 Record the user's daily goals. Call this when user states what they want to do."""
-    ctx.userdata.current_checkin.objectives = objectives
-    print(f"🎯 OBJECTIVES LOGGED: {objectives}")
-    return "I've written down your goals for the day."
+    state = ctx.userdata.tutor_state
+    mode_lower = mode.lower()
+    if mode_lower not in ("learn", "quiz", "teach_back"):
+        return "Invalid mode. Please choose 'learn', 'quiz', or 'teach_back'."
+
+    state.mode = mode_lower
+    agent_session = ctx.userdata.agent_session
+
+    if agent_session:
+        if state.mode == "learn":
+            agent_session.tts.update_options(voice="en-US-matthew", style="Promo")
+            instruction = f"Mode: LEARN. Explain the concept: {state.current_topic_data['summary']}"
+        elif state.mode == "quiz":
+            agent_session.tts.update_options(voice="en-US-alicia", style="Conversational")
+            instruction = f"Mode: QUIZ. Ask this question: {state.current_topic_data['sample_question']}"
+        else:  # teach_back
+            agent_session.tts.update_options(voice="en-US-ken", style="Promo")
+            instruction = "Mode: TEACH_BACK. Ask me to explain the concept to you as if you're a beginner."
+
+    else:
+        instruction = "Could not set voice (session not found)."
+
+    print(f"🔄 SWITCHING MODE -> {state.mode.upper()}")
+    return f"Switched to **{state.mode}** mode. {instruction}"
 
 @function_tool
-async def complete_checkin(
+async def evaluate_teaching(
     ctx: RunContext[Userdata],
-    final_advice_summary: Annotated[str, Field(description="A brief 1-sentence summary of the advice given")],
+    user_explanation: Annotated[str, Field(description="The explanation given by the user during teach-back")]
 ) -> str:
-    """💾 Finalize the session, provide a recap, and save to JSON. Call at the very end."""
-    state = ctx.userdata.current_checkin
-    state.advice_given = final_advice_summary
-    
-    if not state.is_complete():
-        return "I can't finish yet. I still need to know your mood, energy, or at least one goal."
-
-    # Save to JSON
-    save_checkin_entry(state)
-    
-    print("\n" + "⭐" * 60)
-    print("🎉 WELLNESS CHECK-IN COMPLETED!")
-    print(f"💭 Mood: {state.mood}")
-    print(f"🎯 Goals: {state.objectives}")
-    print("⭐" * 60 + "\n")
-
-    recap = f"""
-    Here is your recap for today:
-    You are feeling {state.mood} and your energy is {state.energy}.
-    Your main goals are: {', '.join(state.objectives)}.
-    
-    Remember: {final_advice_summary}
-    
-    I've saved this in your wellness log. Have a wonderful day!
-    """
-    return recap
+    # You can improve this by calling an LLM to check correctness
+    print(f"📝 EVALUATING EXPLANATION: {user_explanation}")
+    # naive feedback
+    return ("Thank you for your explanation. Here's my feedback:\n"
+            "- **Accuracy**: 7/10 — you covered many key points.\n"
+            "- **Clarity**: 8/10 — your explanation was clear.\n"
+            "Some corrections / improvements:\n"
+            f"  • The concept of *{ctx.userdata.tutor_state.current_topic_data['title']}* also involves … (add more depth based on the topic).\n"
+            "Would you like to go over any part again?")
 
 # ======================================================
 # 🧠 AGENT DEFINITION
 # ======================================================
 
-class WellnessAgent(Agent):
-    def __init__(self, history_context: str):
+class SQLEngineAgent(Agent):
+    def __init__(self):
+        topic_list = ", ".join([f"{t['id']} ({t['title']})" for t in COURSE_CONTENT])
         super().__init__(
             instructions=f"""
-            You are a compassionate, supportive Daily Wellness Companion.
+            You are a **SQL Tutor** designed to help users master SQL concepts important for interviews and real-world use.
             
-            🧠 **CONTEXT FROM PREVIOUS SESSIONS:**
-            {history_context}
+            📚 **AVAILABLE TOPICS:** {topic_list}
             
-            🎯 **GOALS FOR THIS SESSION:**
-            1. **Check-in:** Ask how they are feeling (Mood) and their energy levels.
-               - *Reference the history context if available (e.g., "Last time you were tired, how is today?").*
-            2. **Intentions:** Ask for 1-3 simple objectives for the day.
-            3. **Support:** Offer small, grounded, NON-MEDICAL advice.
-               - Example: "Try a 5-minute walk" or "Break that big task into small steps."
-            4. **Recap & Save:** Summarize their mood and goals, then call 'complete_checkin'.
-
-            🚫 **SAFETY GUARDRAILS:**
-            - You are NOT a doctor or therapist.
-            - Do NOT diagnose conditions or prescribe treatments.
-            - If a user mentions self-harm or severe crisis, gently suggest professional help immediately.
-
-            🛠️ **Use the tools to record data as the user speaks.**
+            🔄 **YOU HAVE 3 MODES:**
+            1. **LEARN Mode (Voice: Matthew):** Explain the concept using the summary.
+            2. **QUIZ Mode (Voice: Alicia):** Ask the sample question to test the user.
+            3. **TEACH_BACK Mode (Voice: Ken):** You act like a student: ask the user to explain the concept back to you.
+            
+            ⚙️ **BEHAVIOR:**
+            - Ask the user which topic they want to study.
+            - Use the `select_topic` tool to set the topic.
+            - When user asks to “learn”, “quiz”, or “teach back”, call `set_learning_mode`.
+            - In teach-back mode, listen to their explanation and then call `evaluate_teaching` to give feedback.
             """,
-            tools=[
-                record_mood_and_energy,
-                record_objectives,
-                complete_checkin,
-            ],
+            tools=[select_topic, set_learning_mode, evaluate_teaching],
         )
 
 # ======================================================
-# 🎬 ENTRYPOINT & INITIALIZATION
+# 🎬 ENTRYPOINT
 # ======================================================
 
 def prewarm(proc: JobProcess):
@@ -219,49 +247,28 @@ def prewarm(proc: JobProcess):
 
 async def entrypoint(ctx: JobContext):
     ctx.log_context_fields = {"room": ctx.room.name}
+    print("\n" + "📊" * 25)
+    print("🚀 STARTING SQL TUTOR SESSION")
+    print(f"📚 Loaded {len(COURSE_CONTENT)} topics from Knowledge Base")
 
-    print("\n" + "🌿" * 25)
-    print("🚀 STARTING WELLNESS SESSION")
-    print("👨‍⚕️ Tutorial by Akhil Chand Ramola")
-    
-    # 1. Load History from JSON
-    history = load_history()
-    history_summary = "No previous history found. This is the first session."
-    
-    if history:
-        last_entry = history[-1]
-        history_summary = (
-            f"Last check-in was on {last_entry.get('timestamp', 'unknown date')}. "
-            f"User felt {last_entry.get('mood')} with {last_entry.get('energy')} energy. "
-            f"Their goals were: {', '.join(last_entry.get('objectives', []))}."
-        )
-        print("📜 HISTORY LOADED:", history_summary)
-    else:
-        print("📜 NO HISTORY FOUND.")
-
-    # 2. Initialize Session Data
-    userdata = Userdata(
-        current_checkin=CheckInState(),
-        history_summary=history_summary
-    )
-
-    # 3. Setup Agent
+    userdata = Userdata(tutor_state=TutorState())
     session = AgentSession(
         stt=deepgram.STT(model="nova-3"),
         llm=google.LLM(model="gemini-2.5-flash"),
         tts=murf.TTS(
-            voice="en-US-natalie", # Using a softer, more caring voice
-            style="Promo",         # Often sounds more enthusiastic/supportive
+            voice="en-US-matthew",
+            style="Promo",
             text_pacing=True,
         ),
         turn_detection=MultilingualModel(),
         vad=ctx.proc.userdata["vad"],
         userdata=userdata,
     )
-    
-    # 4. Start
+
+    userdata.agent_session = session
+
     await session.start(
-        agent=WellnessAgent(history_context=history_summary),
+        agent=SQLEngineAgent(),
         room=ctx.room,
         room_input_options=RoomInputOptions(
             noise_cancellation=noise_cancellation.BVC()
