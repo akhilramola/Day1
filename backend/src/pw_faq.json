@@ -1,0 +1,66 @@
+{
+  "company": "Physics Wallah (PW)",
+  "about": "Physics Wallah is an Indian ed-tech platform offering a wide range of online and offline/hybrid coaching for school students, professional/competitive-exam aspirants, government-job aspirants and more. PW combines live & recorded lectures, test series, study material, offline centres (Vidyapeeth), mocks and flexibility to cover many exams and courses. Their goal is to make education affordable and accessible across India. https://www.pw.live/ :contentReference[oaicite:1]{index=1}",
+  "offerings": [
+    "Online & offline coaching for school classes (6th–12th)",
+    "Competitive exam coaching: JEE, NEET, CUET, IIT-JAM, GATE",
+    "Government exam / job exam coaching: SSC, Bank, AE/JE (Civil, EEE/ECE/Mechanical etc.), State PSC, UPSC, Defence (NDA, CDS, Agniveer), Railway JE, PSU-entrance etc.",
+    "Professional / career-oriented exam coaching: CA, CS, ACCA, UGC-NET / CSIR-NET, MBA entrance, other commerce / professional courses",
+    "Teaching-exam coaching: TET / CTET / State TETs / Teaching eligibility exams",
+    "Test series, mocks, sample papers, NCERT solutions, previous-year papers, study-material & recorded lectures",
+    "Offline / hybrid coaching via Vidyapeeth / coaching centres in many cities",
+    "Scholarship / foundation batches / discounted registration / batch-based admission"
+  ],
+  "courses_listed": [
+    "Classes 6th to 12th (school board)",
+    "Class 8 / Class 9 / Class 10 / Class 11 / Class 12 (foundation / board / entrance prep)",
+    "IIT-JEE (Main + Advanced)",
+    "NEET (UG & dropper batches)",
+    "CUET / University-level entrance courses",
+    "GATE / IIT-JAM / PG-entrance exams",
+    "SSC (staff selection commission) exam coaching",
+    "Bank exam coaching",
+    "AE / JE (Civil / Mechanical / Electrical / ECE / EEE / Computer / etc.) & PSU-entrance",
+    "Railway JE / RRB JE",
+    "State PSC exams (various state public service commission exams)",
+    "UPSC / UPSC-CSE / other UPSC exams",
+    "Defence-exam coaching: NDA, CDS, Agniveer, SSB prep",
+    "Teaching-exam coaching: TET / CTET / state teaching eligibility tests",
+    "Commerce / professional courses: CA, CS (Company Secretary), ACCA, UGC-NET / CSIR-NET, MBA entrance",
+    "Other exams / entrance exams / competitive exams / vocational / professional courses"
+  ],
+  "FAQ": [
+    {
+      "question": "What types of courses does Physics Wallah offer?",
+      "answer": "PW offers school-level coaching (classes 6–12), entrance exam prep (JEE, NEET, CUET, IIT-JAM, GATE), government / job-exam coaching (SSC, Bank, AE/JE, State PSC, UPSC, Defence, Railway JE, PSU-entrance), teaching-exam coaching (TET/CTET), professional/commerce courses (CA, CS, ACCA, UGC-NET/CSIR-NET, MBA entrance), along with test-series, mocks, study-material and offline/hybrid classes via their Vidyapeeth centres. :contentReference[oaicite:2]{index=2}"
+    },
+    {
+      "question": "Does Physics Wallah provide online as well as offline or hybrid classes?",
+      "answer": "Yes. PW offers both online coaching batches and offline/hybrid classes through its Vidyapeeth centres across India. :contentReference[oaicite:3]{index=3}"
+    },
+    {
+      "question": "Do they offer engineering-branch job / AE/JE / SSC-JE / Railway-JE / PSU-entrance coaching?",
+      "answer": "Yes. PW lists AE & JE (Civil, Mechanical, Electrical, ECE, Computer etc.) online coaching for SSC JE, RRB JE, PSU-related exams, and other engineering-branch job exams. :contentReference[oaicite:4]{index=4}"
+    },
+    {
+      "question": "What about commerce / professional courses like CA, CS, ACCA, or postgraduate entrance exams / UGC-NET?",
+      "answer": "PW lists courses for CA, CS (Company Secretary), ACCA, UGC-NET / CSIR-NET in its catalogue. :contentReference[oaicite:5]{index=5}"
+    },
+    {
+      "question": "Is there support for school-board exams and classes from 6th to 12th?",
+      "answer": "Yes. PW provides online and offline coaching for classes 6th to 12th, for school-board syllabus, along with foundation courses for lower classes. :contentReference[oaicite:6]{index=6}"
+    },
+    {
+      "question": "What about test-series, mocks, sample papers and study materials?",
+      "answer": "PW offers study materials, sample papers, previous-year papers, mocks, test-series, live/recorded lectures and 24×7 doubt-solving support for many courses. :contentReference[oaicite:7]{index=7}"
+    },
+    {
+      "question": "How affordable are the courses / what’s the fee / registration cost?",
+      "answer": "According to PW’s published fee-structure: many online / foundation / test-series courses start from modest amounts (e.g. some batches show price ₹999–₹3,999 or with discounts). Offline or full Vidyapeeth courses have higher fees depending on course duration and batch type. :contentReference[oaicite:8]{index=8}"
+    }
+  ],
+  "notes": {
+    "fee_variability": "Fees and exact batch-availability vary depending on course type (online / offline), subject/exam, branch (for engineering/job exams), discount offers, and batch start date — user should be asked for exact exam/branch before quoting fee.",
+    "course_catalogue_dynamic": "PW’s catalogue is wide and evolving; some courses (especially professional/entrance) may have limited or periodic batches; always verify availability before confirming to user."
+  }
+}
