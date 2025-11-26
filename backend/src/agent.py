@@ -1,7 +1,6 @@
 # ======================================================
-# 🌿 DAILY WELLNESS VOICE COMPANION
-# 💼 Professional Voice AI Development Course
-# 🚀 Context-Aware Agents & JSON Persistence
+# 💼 AI SALES DEVELOPMENT REP (SDR) for Physics Wallah (PW)
+# 🚀 Features: FAQ Retrieval, Lead Qualification, JSON Lead Store
 # ======================================================
 
 import logging
@@ -9,14 +8,14 @@ import json
 import os
 import asyncio
 from datetime import datetime
-from typing import Annotated, Literal, List, Optional
-from dataclasses import dataclass, field, asdict
+from typing import Optional
+from dataclasses import dataclass, asdict
 
-print("\n" + "🌿" * 50)
-print("🚀 WELLNESS COMPANION - TUTORIAL BY Akhil Chand Ramola")
-print("")
+print("\n" + "💼" * 30)
+print("🚀 AI SDR AGENT — Physics Wallah (PW)")
+print("📚 Selling: PW online/offline courses (school, JEE/NEET, test-series etc.)")
 print("💡 agent.py LOADED SUCCESSFULLY!")
-print("🌿" * 50 + "\n")
+print("💼" * 30 + "\n")
 
 from dotenv import load_dotenv
 from pydantic import Field
@@ -28,10 +27,8 @@ from livekit.agents import (
     RoomInputOptions,
     WorkerOptions,
     cli,
-    metrics,
-    MetricsCollectedEvent,
-    RunContext,
     function_tool,
+    RunContext,
 )
 
 from livekit.plugins import murf, silero, google, deepgram, noise_cancellation
@@ -41,177 +38,158 @@ logger = logging.getLogger("agent")
 load_dotenv(".env.local")
 
 # ======================================================
-# 🧠 STATE MANAGEMENT & DATA STRUCTURES
+# 📂 1. KNOWLEDGE BASE (FAQ for PW)
+# ======================================================
+
+FAQ_FILE = "pw_faq.json"
+LEADS_FILE = "pw_leads_db.json"
+
+DEFAULT_PW_FAQ = [
+    {
+        "question": "What is Physics Wallah?",
+        "answer": "Physics Wallah (PW) is an Indian ed-tech platform offering affordable online and offline education for students in classes 6-12, and aspirants preparing for exams like JEE and NEET. They provide video lectures, live classes, test series, NCERT solutions and study resources. :contentReference[oaicite:1]{index=1}"
+    },
+    {
+        "question": "Who founded Physics Wallah and when?",
+        "answer": "PW was started by Alakh Pandey as a YouTube channel in 2016, and later co-founded with Prateek Maheshwari when the official app/company launched. :contentReference[oaicite:2]{index=2}"
+    },
+    {
+        "question": "What courses / exams do you cover?",
+        "answer": "We cover school classes (6 to 12), board curricula and competitive exam preparation like JEE and NEET. PW provides online video lectures, live classes, test series, and study materials. :contentReference[oaicite:3]{index=3}"
+    },
+    {
+        "question": "Do you offer offline or hybrid classes?",
+        "answer": "Yes — apart from online courses, PW operates offline / hybrid coaching centres across India in many locations. :contentReference[oaicite:4]{index=4}"
+    },
+    {
+        "question": "Do you provide free lectures / content?",
+        "answer": "Yes. Physics Wallah originally started as a YouTube channel, and many lectures remain free on YouTube and perhaps on the PW platform. :contentReference[oaicite:5]{index=5}"
+    },
+    {
+        "question": "What is the cost / pricing of courses?",
+        "answer": "PW aims to keep education affordable; earlier reporting noted modest tuition fees when the app launched. Exact pricing varies depending on course type (online / offline / test-series / batch). :contentReference[oaicite:6]{index=6}"
+    }
+    # — you can add more entries as needed.
+]
+
+def load_knowledge_base():
+    try:
+        path = os.path.join(os.path.dirname(__file__), FAQ_FILE)
+        if not os.path.exists(path):
+            with open(path, "w", encoding='utf-8') as f:
+                json.dump(DEFAULT_PW_FAQ, f, indent=4)
+        with open(path, "r", encoding='utf-8') as f:
+            return json.dumps(json.load(f))
+    except Exception as e:
+        print(f"⚠️ Error loading FAQ: {e}")
+        return ""
+
+PW_FAQ_TEXT = load_knowledge_base()
+
+# ======================================================
+# 💾 2. LEAD DATA STRUCTURE
 # ======================================================
 
 @dataclass
-class CheckInState:
-    """🌿 Holds data for the CURRENT daily check-in"""
-    mood: str | None = None
-    energy: str | None = None
-    objectives: list[str] = field(default_factory=list)
-    advice_given: str | None = None
-    
-    def is_complete(self) -> bool:
-        """✅ Check if we have the core check-in data"""
-        return all([
-            self.mood is not None,
-            self.energy is not None,
-            len(self.objectives) > 0
-        ])
-    
-    def to_dict(self) -> dict:
-        return asdict(self)
+class LeadProfile:
+    name: Optional[str] = None
+    user_type: Optional[str] = None  # student / parent / coaching-institute / working professional
+    email: Optional[str] = None
+    target_exam_or_grade: Optional[str] = None  # e.g. JEE, NEET, class 12 CBSE
+    use_case: Optional[str] = None  # What they want: school board, entrance prep, etc.
+    timeline: Optional[str] = None  # When they plan to start: now / next month / next academic year
+
+    def is_qualified(self):
+        return all([self.name, self.email, self.use_case])
 
 @dataclass
 class Userdata:
-    """👤 User session data passed to the agent"""
-    current_checkin: CheckInState
-    history_summary: str  # String containing info about previous sessions
-    session_start: datetime = field(default_factory=datetime.now)
+    lead_profile: LeadProfile
 
 # ======================================================
-# 💾 PERSISTENCE LAYERS (JSON LOGGING)
-# ======================================================
-WELLNESS_LOG_FILE = "wellness_log.json"
-
-def get_log_path():
-    base_dir = os.path.dirname(__file__)
-    backend_dir = os.path.abspath(os.path.join(base_dir, ".."))
-    return os.path.join(backend_dir, WELLNESS_LOG_FILE)
-
-def load_history() -> list:
-    """📖 Read previous check-ins from JSON"""
-    path = get_log_path()
-    if not os.path.exists(path):
-        return []
-    try:
-        with open(path, "r", encoding='utf-8') as f:
-            data = json.load(f)
-            return data if isinstance(data, list) else []
-    except Exception as e:
-        print(f"⚠️ Could not load history: {e}")
-        return []
-
-def save_checkin_entry(entry: CheckInState) -> None:
-    """💾 Append new check-in to the JSON list"""
-    path = get_log_path()
-    history = load_history()
-    
-    # Create record
-    record = {
-        "timestamp": datetime.now().isoformat(),
-        "mood": entry.mood,
-        "energy": entry.energy,
-        "objectives": entry.objectives,
-        "summary": entry.advice_given
-    }
-    
-    history.append(record)
-    
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding='utf-8') as f:
-        json.dump(history, f, indent=4, ensure_ascii=False)
-        
-    print(f"\n✅ CHECK-IN SAVED TO {path}")
-
-# ======================================================
-# 🛠️ WELLNESS AGENT TOOLS
+# 🛠️ 3. SDR TOOLS
 # ======================================================
 
 @function_tool
-async def record_mood_and_energy(
+async def update_lead_profile(
     ctx: RunContext[Userdata],
-    mood: Annotated[str, Field(description="The user's emotional state (e.g., happy, stressed, anxious)")],
-    energy: Annotated[str, Field(description="The user's energy level (e.g., high, low, drained, energetic)")],
+    name: Optional[str] = None,
+    user_type: Optional[str] = None,
+    email: Optional[str] = None,
+    target_exam_or_grade: Optional[str] = None,
+    use_case: Optional[str] = None,
+    timeline: Optional[str] = None,
 ) -> str:
-    """📝 Record how the user is feeling. Call this after the user describes their state."""
-    ctx.userdata.current_checkin.mood = mood
-    ctx.userdata.current_checkin.energy = energy
-    
-    print(f"📊 MOOD LOGGED: {mood} | ENERGY: {energy}")
-    
-    return f"I've noted that you are feeling {mood} with {energy} energy. I'm listening."
+    profile = ctx.userdata.lead_profile
+    if name: profile.name = name
+    if user_type: profile.user_type = user_type
+    if email: profile.email = email
+    if target_exam_or_grade: profile.target_exam_or_grade = target_exam_or_grade
+    if use_case: profile.use_case = use_case
+    if timeline: profile.timeline = timeline
+    print(f"📝 UPDATING LEAD: {profile}")
+    return "Lead profile updated. Continue the conversation."
 
 @function_tool
-async def record_objectives(
+async def submit_lead_and_end(
     ctx: RunContext[Userdata],
-    objectives: Annotated[list[str], Field(description="List of 1-3 specific goals the user wants to achieve today")],
 ) -> str:
-    """🎯 Record the user's daily goals. Call this when user states what they want to do."""
-    ctx.userdata.current_checkin.objectives = objectives
-    print(f"🎯 OBJECTIVES LOGGED: {objectives}")
-    return "I've written down your goals for the day."
-
-@function_tool
-async def complete_checkin(
-    ctx: RunContext[Userdata],
-    final_advice_summary: Annotated[str, Field(description="A brief 1-sentence summary of the advice given")],
-) -> str:
-    """💾 Finalize the session, provide a recap, and save to JSON. Call at the very end."""
-    state = ctx.userdata.current_checkin
-    state.advice_given = final_advice_summary
-    
-    if not state.is_complete():
-        return "I can't finish yet. I still need to know your mood, energy, or at least one goal."
-
-    # Save to JSON
-    save_checkin_entry(state)
-    
-    print("\n" + "⭐" * 60)
-    print("🎉 WELLNESS CHECK-IN COMPLETED!")
-    print(f"💭 Mood: {state.mood}")
-    print(f"🎯 Goals: {state.objectives}")
-    print("⭐" * 60 + "\n")
-
-    recap = f"""
-    Here is your recap for today:
-    You are feeling {state.mood} and your energy is {state.energy}.
-    Your main goals are: {', '.join(state.objectives)}.
-    
-    Remember: {final_advice_summary}
-    
-    I've saved this in your wellness log. Have a wonderful day!
-    """
-    return recap
+    profile = ctx.userdata.lead_profile
+    db_path = os.path.join(os.path.dirname(__file__), LEADS_FILE)
+    entry = asdict(profile)
+    entry["timestamp"] = datetime.now().isoformat()
+    existing_data = []
+    if os.path.exists(db_path):
+        try:
+            with open(db_path, "r") as f:
+                existing_data = json.load(f)
+        except: pass
+    existing_data.append(entry)
+    with open(db_path, "w") as f:
+        json.dump(existing_data, f, indent=4)
+    print(f"✅ LEAD SAVED TO {LEADS_FILE}")
+    return f"Lead saved. Thanks {profile.name}! We’ve recorded that you want: {profile.use_case} (Target: {profile.target_exam_or_grade}), timeline: {profile.timeline}. We’ll email you at {profile.email} with next steps. Good bye!"
 
 # ======================================================
-# 🧠 AGENT DEFINITION
+# 🧠 4. AGENT DEFINITION
 # ======================================================
 
-class WellnessAgent(Agent):
-    def __init__(self, history_context: str):
+class SDRAgent(Agent):
+    def __init__(self):
         super().__init__(
             instructions=f"""
-            You are a compassionate, supportive Daily Wellness Companion.
-            
-            🧠 **CONTEXT FROM PREVIOUS SESSIONS:**
-            {history_context}
-            
-            🎯 **GOALS FOR THIS SESSION:**
-            1. **Check-in:** Ask how they are feeling (Mood) and their energy levels.
-               - *Reference the history context if available (e.g., "Last time you were tired, how is today?").*
-            2. **Intentions:** Ask for 1-3 simple objectives for the day.
-            3. **Support:** Offer small, grounded, NON-MEDICAL advice.
-               - Example: "Try a 5-minute walk" or "Break that big task into small steps."
-            4. **Recap & Save:** Summarize their mood and goals, then call 'complete_checkin'.
+            You are 'Ananya', a friendly and professional Sales Development Rep (SDR) for Physics Wallah (PW).
 
-            🚫 **SAFETY GUARDRAILS:**
-            - You are NOT a doctor or therapist.
-            - Do NOT diagnose conditions or prescribe treatments.
-            - If a user mentions self-harm or severe crisis, gently suggest professional help immediately.
+            📘 YOUR KNOWLEDGE BASE (FAQ + company info):
+            {PW_FAQ_TEXT}
 
-            🛠️ **Use the tools to record data as the user speaks.**
-            """,
-            tools=[
-                record_mood_and_energy,
-                record_objectives,
-                complete_checkin,
-            ],
+            🎯 YOUR GOAL:
+            1. Answer questions about PW’s offerings (online/offline courses, test-series, exam prep) using only the info provided above.
+            2. QUALIFY THE LEAD: Naturally ask for:
+               - Name
+               - Are you a student / parent / coaching-institute / working professional?
+               - Email or contact
+               - What you're aiming for (grade / exam)
+               - What you want: board-class, JEE/NEET prep, etc. (Use Case)
+               - When you plan to start (Timeline)
+
+            ⚙️ BEHAVIOR:
+            - After answering a question, gently ask a lead-qualification question.
+              Example: “Sure — we cover JEE. By the way, may I know which exam you’re preparing for?”
+            - Don’t push — let user volunteer info.
+            - If user asks something not in the FAQ (e.g. exact batch start date), reply: “I’m not sure, I’ll check and get back to you soon.”
+            - Use update_lead_profile when user gives info.
+            - When user says “That’s all”, “Thanks”, etc., call submit_lead_and_end.
+
+            🚫 RESTRICTIONS:
+            - Do not invent batch-dates, fees, or syllabus details if not in FAQ.
+            """
+            ,
+            tools=[update_lead_profile, submit_lead_and_end],
         )
 
 # ======================================================
-# 🎬 ENTRYPOINT & INITIALIZATION
+# 🎬 ENTRYPOINT
 # ======================================================
 
 def prewarm(proc: JobProcess):
@@ -220,48 +198,23 @@ def prewarm(proc: JobProcess):
 async def entrypoint(ctx: JobContext):
     ctx.log_context_fields = {"room": ctx.room.name}
 
-    print("\n" + "🌿" * 25)
-    print("🚀 STARTING WELLNESS SESSION")
-    print("👨‍⚕️ Tutorial by Akhil Chand Ramola")
-    
-    # 1. Load History from JSON
-    history = load_history()
-    history_summary = "No previous history found. This is the first session."
-    
-    if history:
-        last_entry = history[-1]
-        history_summary = (
-            f"Last check-in was on {last_entry.get('timestamp', 'unknown date')}. "
-            f"User felt {last_entry.get('mood')} with {last_entry.get('energy')} energy. "
-            f"Their goals were: {', '.join(last_entry.get('objectives', []))}."
-        )
-        print("📜 HISTORY LOADED:", history_summary)
-    else:
-        print("📜 NO HISTORY FOUND.")
+    userdata = Userdata(lead_profile=LeadProfile())
 
-    # 2. Initialize Session Data
-    userdata = Userdata(
-        current_checkin=CheckInState(),
-        history_summary=history_summary
-    )
-
-    # 3. Setup Agent
     session = AgentSession(
         stt=deepgram.STT(model="nova-3"),
         llm=google.LLM(model="gemini-2.5-flash"),
         tts=murf.TTS(
-            voice="en-US-natalie", # Using a softer, more caring voice
-            style="Promo",         # Often sounds more enthusiastic/supportive
+            voice="en-US-natalie",
+            style="Promo",
             text_pacing=True,
         ),
         turn_detection=MultilingualModel(),
         vad=ctx.proc.userdata["vad"],
         userdata=userdata,
     )
-    
-    # 4. Start
+
     await session.start(
-        agent=WellnessAgent(history_context=history_summary),
+        agent=SDRAgent(),
         room=ctx.room,
         room_input_options=RoomInputOptions(
             noise_cancellation=noise_cancellation.BVC()
