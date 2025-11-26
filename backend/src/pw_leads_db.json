@@ -1,0 +1,20 @@
+[
+    {
+        "name": "Akhil Chandramola",
+        "user_type": "Student",
+        "email": "AkhilRamolaofficial@gmail.com",
+        "target_exam_or_grade": "IIT JEE",
+        "use_case": "JEE Prep (Online Courses)",
+        "timeline": null,
+        "timestamp": "2025-11-26T08:59:09.814428"
+    },
+    {
+        "name": "Chatuhay",
+        "user_type": "student",
+        "email": "ChillerChatu@gmail.com",
+        "target_exam_or_grade": "IIT-JEE (Main + Advanced)",
+        "use_case": "JEE prep",
+        "timeline": "within 1 month",
+        "timestamp": "2025-11-26T09:24:27.071231"
+    }
+]
