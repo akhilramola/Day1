@@ -1,22 +1,20 @@
 # ======================================================
-# 🌿 DAILY WELLNESS VOICE COMPANION
-# 💼 Professional Voice AI Development Course
-# 🚀 Context-Aware Agents & JSON Persistence
+# 🏦 DAY 6: BANK FRAUD ALERT AGENT
+# 🛡️ "Global Bank" - Fraud Detection & Resolution
+# 🚀 Features: Identity Verification, Database Lookup, Status Updates
 # ======================================================
 
 import logging
 import json
 import os
-import asyncio
 from datetime import datetime
-from typing import Annotated, Literal, List, Optional
-from dataclasses import dataclass, field, asdict
+from typing import Annotated, Optional, List
+from dataclasses import dataclass, asdict
 
-print("\n" + "🌿" * 50)
-print("🚀 WELLNESS COMPANION - TUTORIAL BY Akhil Chand Ramola")
-print("")
-print("💡 agent.py LOADED SUCCESSFULLY!")
-print("🌿" * 50 + "\n")
+print("\n" + "🛡️" * 50)
+print("🚀 BANK FRAUD AGENT BY DR ABHISHEK - INITIALIZED")
+print("📚 TASKS: Verify Identity -> Check Transaction -> Update DB")
+print("🛡️" * 50 + "\n")
 
 from dotenv import load_dotenv
 from pydantic import Field
@@ -28,12 +26,11 @@ from livekit.agents import (
     RoomInputOptions,
     WorkerOptions,
     cli,
-    metrics,
-    MetricsCollectedEvent,
-    RunContext,
     function_tool,
+    RunContext,
 )
 
+# 🔌 PLUGINS
 from livekit.plugins import murf, silero, google, deepgram, noise_cancellation
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
@@ -41,177 +38,296 @@ logger = logging.getLogger("agent")
 load_dotenv(".env.local")
 
 # ======================================================
-# 🧠 STATE MANAGEMENT & DATA STRUCTURES
+# 💾 1. DATABASE SETUP (Mock Data)
 # ======================================================
 
+DB_FILE = "fraud_db.json"
+
+# Schema as requested
 @dataclass
-class CheckInState:
-    """🌿 Holds data for the CURRENT daily check-in"""
-    mood: str | None = None
-    energy: str | None = None
-    objectives: list[str] = field(default_factory=list)
-    advice_given: str | None = None
-    
-    def is_complete(self) -> bool:
-        """✅ Check if we have the core check-in data"""
-        return all([
-            self.mood is not None,
-            self.energy is not None,
-            len(self.objectives) > 0
-        ])
-    
-    def to_dict(self) -> dict:
-        return asdict(self)
+class FraudCase:
+    userName: str
+    securityIdentifier: str
+    cardEnding: str
+    transactionName: str
+    transactionAmount: str
+    transactionTime: str
+    transactionSource: str
+    # Internal status fields
+    case_status: str = "pending_review"  # pending_review, confirmed_safe, confirmed_fraud
+    notes: str = ""
+
+def seed_database():
+    """Creates a sample database if one doesn't exist."""
+    path = os.path.join(os.path.dirname(__file__), DB_FILE)
+    if not os.path.exists(path):
+        sample_data = [
+            
+            {
+                "userName": "Michael",
+                "securityIdentifier": "44521",
+                "cardEnding": "3344",
+                "transactionName": "Mega Electronics Co.",
+                "transactionAmount": "$799.99",
+                "transactionTime": "2025-11-21 13:47:22 EST",
+                "transactionSource": "megastore.com",
+                "case_status": "pending_review",
+                "notes": "Automated flag: High-value e-commerce purchase."
+            },
+            {
+                "userName": "Priya",
+                "securityIdentifier": "77003",
+                "cardEnding": "5566",
+                "transactionName": "LuxuryFashions Ltd.",
+                "transactionAmount": "$1,250.00",
+                "transactionTime": "2025-11-22 09:05:10 GMT",
+                "transactionSource": "luxfashions.com",
+                "case_status": "pending_review",
+                "notes": "Automated flag: International merchant."
+            },
+            {
+                "userName": "Ravi",
+                "securityIdentifier": "22334",
+                "cardEnding": "7788",
+                "transactionName": "Global Travel Agency",
+                "transactionAmount": "$3,499.50",
+                "transactionTime": "2025-11-23 22:30:45 PST",
+                "transactionSource": "globaltravel.com",
+                "case_status": "pending_review",
+                "notes": "Automated flag: Unusual travel-booking transaction."
+            },
+            {
+                "userName": "John",
+                "securityIdentifier": "12345",
+                "cardEnding": "4242",
+                "transactionName": "ABC Industry",
+                "transactionAmount": "$450.00",
+                "transactionTime": "2:30 AM EST",
+                "transactionSource": "alibaba.com",
+                "case_status": "pending_review",
+                "notes": "Automated flag: High value transaction."
+            },
+            {
+                "userName": "Sarah",
+                "securityIdentifier": "99887",
+                "cardEnding": "1199",
+                "transactionName": "Unknown Crypto Exchange",
+                "transactionAmount": "$2,100.00",
+                "transactionTime": "4:15 AM PST",
+                "transactionSource": "online_transfer",
+                "case_status": "pending_review",
+                "notes": "Automated flag: Unusual location."
+            },
+            {
+                "userName": "Aisha",
+                "securityIdentifier": "88990",
+                "cardEnding": "9900",
+                "transactionName": "Online Gaming Zone",
+                "transactionAmount": "$299.99",
+                "transactionTime": "2025-11-24 18:12:55 EST",
+                "transactionSource": "gamingzone.net",
+                "case_status": "pending_review",
+                "notes": "Automated flag: Suspicious merchant category."
+            },
+            {
+                "userName": "David",
+                "securityIdentifier": "55667",
+                "cardEnding": "1122",
+                "transactionName": "Furniture World",
+                "transactionAmount": "$540.75",
+                "transactionTime": "2025-11-25 11:20:30 GMT",
+                "transactionSource": "furnitureworld.com",
+                "case_status": "pending_review",
+                "notes": "Automated flag: Large furniture purchase."
+            },
+            {
+                "userName": "Neha",
+                "securityIdentifier": "33445",
+                "cardEnding": "2233",
+                "transactionName": "Digital Books Store",
+                "transactionAmount": "$45.99",
+                "transactionTime": "2025-11-26 07:45:00 PST",
+                "transactionSource": "ebooks-online.com",
+                "case_status": "pending_review",
+                "notes": "Automated flag: Frequent small-value purchases."
+            },
+            {
+                "userName": "Arjun",
+                "securityIdentifier": "66778",
+                "cardEnding": "3345",
+                "transactionName": "Sports Gear Hub",
+                "transactionAmount": "$149.49",
+                "transactionTime": "2025-11-26 15:30:20 EST",
+                "transactionSource": "sportshub.com",
+                "case_status": "pending_review",
+                "notes": "Automated flag: New merchant unfamiliar."
+            },
+            {
+                "userName": "Meena",
+                "securityIdentifier": "11223",
+                "cardEnding": "4455",
+                "transactionName": "Health Supplements Inc.",
+                "transactionAmount": "$89.00",
+                "transactionTime": "2025-11-27 08:10:05 GMT",
+                "transactionSource": "healthsupps.store",
+                "case_status": "pending_review",
+                "notes": "Automated flag: Unusual purchase pattern."
+            },
+            {
+                "userName": "Raj",
+                "securityIdentifier": "99001",
+                "cardEnding": "6677",
+                "transactionName": "Electronics MegaStore",
+                "transactionAmount": "$2,999.99",
+                "transactionTime": "2025-11-27 20:55:50 PST",
+                "transactionSource": "electromega.com",
+                "case_status": "pending_review",
+                "notes": "Automated flag: High-value electronics purchase."
+            }
+           
+        ]
+        with open(path, "w", encoding='utf-8') as f:
+            json.dump(sample_data, f, indent=4)
+        print(f"✅ Database seeded at {DB_FILE}")
+
+# Initialize DB on load
+seed_database()
+
+# ======================================================
+# 🧠 2. STATE MANAGEMENT
+# ======================================================
 
 @dataclass
 class Userdata:
-    """👤 User session data passed to the agent"""
-    current_checkin: CheckInState
-    history_summary: str  # String containing info about previous sessions
-    session_start: datetime = field(default_factory=datetime.now)
+    # Holds the specific case currently being discussed
+    active_case: Optional[FraudCase] = None
 
 # ======================================================
-# 💾 PERSISTENCE LAYERS (JSON LOGGING)
-# ======================================================
-WELLNESS_LOG_FILE = "wellness_log.json"
-
-def get_log_path():
-    base_dir = os.path.dirname(__file__)
-    backend_dir = os.path.abspath(os.path.join(base_dir, ".."))
-    return os.path.join(backend_dir, WELLNESS_LOG_FILE)
-
-def load_history() -> list:
-    """📖 Read previous check-ins from JSON"""
-    path = get_log_path()
-    if not os.path.exists(path):
-        return []
-    try:
-        with open(path, "r", encoding='utf-8') as f:
-            data = json.load(f)
-            return data if isinstance(data, list) else []
-    except Exception as e:
-        print(f"⚠️ Could not load history: {e}")
-        return []
-
-def save_checkin_entry(entry: CheckInState) -> None:
-    """💾 Append new check-in to the JSON list"""
-    path = get_log_path()
-    history = load_history()
-    
-    # Create record
-    record = {
-        "timestamp": datetime.now().isoformat(),
-        "mood": entry.mood,
-        "energy": entry.energy,
-        "objectives": entry.objectives,
-        "summary": entry.advice_given
-    }
-    
-    history.append(record)
-    
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding='utf-8') as f:
-        json.dump(history, f, indent=4, ensure_ascii=False)
-        
-    print(f"\n✅ CHECK-IN SAVED TO {path}")
-
-# ======================================================
-# 🛠️ WELLNESS AGENT TOOLS
+# 🛠️ 3. FRAUD AGENT TOOLS
 # ======================================================
 
 @function_tool
-async def record_mood_and_energy(
+async def lookup_customer(
     ctx: RunContext[Userdata],
-    mood: Annotated[str, Field(description="The user's emotional state (e.g., happy, stressed, anxious)")],
-    energy: Annotated[str, Field(description="The user's energy level (e.g., high, low, drained, energetic)")],
+    name: Annotated[str, Field(description="The name the user provides")]
 ) -> str:
-    """📝 Record how the user is feeling. Call this after the user describes their state."""
-    ctx.userdata.current_checkin.mood = mood
-    ctx.userdata.current_checkin.energy = energy
-    
-    print(f"📊 MOOD LOGGED: {mood} | ENERGY: {energy}")
-    
-    return f"I've noted that you are feeling {mood} with {energy} energy. I'm listening."
-
-@function_tool
-async def record_objectives(
-    ctx: RunContext[Userdata],
-    objectives: Annotated[list[str], Field(description="List of 1-3 specific goals the user wants to achieve today")],
-) -> str:
-    """🎯 Record the user's daily goals. Call this when user states what they want to do."""
-    ctx.userdata.current_checkin.objectives = objectives
-    print(f"🎯 OBJECTIVES LOGGED: {objectives}")
-    return "I've written down your goals for the day."
-
-@function_tool
-async def complete_checkin(
-    ctx: RunContext[Userdata],
-    final_advice_summary: Annotated[str, Field(description="A brief 1-sentence summary of the advice given")],
-) -> str:
-    """💾 Finalize the session, provide a recap, and save to JSON. Call at the very end."""
-    state = ctx.userdata.current_checkin
-    state.advice_given = final_advice_summary
-    
-    if not state.is_complete():
-        return "I can't finish yet. I still need to know your mood, energy, or at least one goal."
-
-    # Save to JSON
-    save_checkin_entry(state)
-    
-    print("\n" + "⭐" * 60)
-    print("🎉 WELLNESS CHECK-IN COMPLETED!")
-    print(f"💭 Mood: {state.mood}")
-    print(f"🎯 Goals: {state.objectives}")
-    print("⭐" * 60 + "\n")
-
-    recap = f"""
-    Here is your recap for today:
-    You are feeling {state.mood} and your energy is {state.energy}.
-    Your main goals are: {', '.join(state.objectives)}.
-    
-    Remember: {final_advice_summary}
-    
-    I've saved this in your wellness log. Have a wonderful day!
     """
-    return recap
+    🔍 Looks up a customer in the fraud database by name.
+    Call this immediately when the user says their name.
+    """
+    print(f"🔎 LOOKING UP: {name}")
+    path = os.path.join(os.path.dirname(__file__), DB_FILE)
+    
+    try:
+        with open(path, "r") as f:
+            data = json.load(f)
+            
+        # Case-insensitive search
+        found_record = next((item for item in data if item["userName"].lower() == name.lower()), None)
+        
+        if found_record:
+            # Load into session state
+            ctx.userdata.active_case = FraudCase(**found_record)
+            
+            # Return info to the LLM so it can verify the user
+            return (f"Record Found. \n"
+                    f"User: {found_record['userName']}\n"
+                    f"Security ID (Expected): {found_record['securityIdentifier']}\n"
+                    f"Transaction Details: {found_record['transactionAmount']} at {found_record['transactionName']} ({found_record['transactionSource']})\n"
+                    f"Instructions: Ask the user for their 'Security Identifier' to verify identity before discussing the transaction.")
+        else:
+            return "User not found in the fraud database. Ask them to repeat the name or contact support manually."
+            
+    except Exception as e:
+        return f"Database error: {str(e)}"
+
+@function_tool
+async def resolve_fraud_case(
+    ctx: RunContext[Userdata],
+    status: Annotated[str, Field(description="The final status: 'confirmed_safe' or 'confirmed_fraud'")],
+    notes: Annotated[str, Field(description="A brief summary of the user's response")]
+) -> str:
+    """
+    💾 Saves the result of the investigation to the database.
+    Call this after the user confirms or denies the transaction.
+    """
+    if not ctx.userdata.active_case:
+        return "Error: No active case selected."
+
+    # Update local object
+    case = ctx.userdata.active_case
+    case.case_status = status
+    case.notes = notes
+    
+    # Update Database File
+    path = os.path.join(os.path.dirname(__file__), DB_FILE)
+    try:
+        with open(path, "r") as f:
+            data = json.load(f)
+        
+        # Find index and update
+        for i, item in enumerate(data):
+            if item["userName"] == case.userName:
+                data[i] = asdict(case)
+                break
+        
+        with open(path, "w") as f:
+            json.dump(data, f, indent=4)
+            
+        print(f"✅ CASE UPDATED: {case.userName} -> {status}")
+        
+        if status == "confirmed_fraud":
+            return "Case updated as FRAUD. Inform the user: Card ending in " + case.cardEnding + " is now blocked. A new card will be mailed."
+        else:
+            return "Case updated as SAFE. Inform the user: The restriction has been lifted. Thank you for verifying."
+
+    except Exception as e:
+        return f"Error saving to DB: {e}"
 
 # ======================================================
-# 🧠 AGENT DEFINITION
+# 🤖 4. AGENT DEFINITION
 # ======================================================
 
-class WellnessAgent(Agent):
-    def __init__(self, history_context: str):
+class FraudAgent(Agent):
+    def __init__(self):
         super().__init__(
-            instructions=f"""
-            You are a compassionate, supportive Daily Wellness Companion.
-            
-            🧠 **CONTEXT FROM PREVIOUS SESSIONS:**
-            {history_context}
-            
-            🎯 **GOALS FOR THIS SESSION:**
-            1. **Check-in:** Ask how they are feeling (Mood) and their energy levels.
-               - *Reference the history context if available (e.g., "Last time you were tired, how is today?").*
-            2. **Intentions:** Ask for 1-3 simple objectives for the day.
-            3. **Support:** Offer small, grounded, NON-MEDICAL advice.
-               - Example: "Try a 5-minute walk" or "Break that big task into small steps."
-            4. **Recap & Save:** Summarize their mood and goals, then call 'complete_checkin'.
+            instructions="""
+            You are 'Alex', a Fraud Detection Specialist at Global Bank. 
+            Your job is to verify a suspicious transaction with the customer efficiently and professionally.
 
-            🚫 **SAFETY GUARDRAILS:**
-            - You are NOT a doctor or therapist.
-            - Do NOT diagnose conditions or prescribe treatments.
-            - If a user mentions self-harm or severe crisis, gently suggest professional help immediately.
+            🛡️ **SECURITY PROTOCOL (FOLLOW STRICTLY):**
+            
+            1. **GREETING & ID:** - State that you are calling about a "security alert".
+               - Ask: "Am I speaking with the account holder? May I have your first name?"
+            
+            2. **LOOKUP:**
+               - Use tool `lookup_customer` immediately when you hear the name.
+            
+            3. **VERIFICATION:**
+               - Once the record is loaded, ask for their **Security Identifier**.
+               - Compare their answer to the data returned by the tool.
+               - IF WRONG: Politely apologize and disconnect (pretend to end call).
+               - IF CORRECT: Proceed.
+            
+            4. **TRANSACTION REVIEW:**
+               - Read the transaction details clearly: "We flagged a charge of [Amount] at [Merchant] on [Time]."
+               - Ask: "Did you make this transaction?"
+            
+            5. **RESOLUTION:**
+               - **If User Says YES (Legit):** Use tool `resolve_fraud_case(status='confirmed_safe')`.
+               - **If User Says NO (Fraud):** Use tool `resolve_fraud_case(status='confirmed_fraud')`.
+            
+            6. **CLOSING:**
+               - Confirm the action taken (Card blocked OR Unblocked).
+               - Say goodbye professionally.
 
-            🛠️ **Use the tools to record data as the user speaks.**
+            ⚠️ **TONE:** Calm, authoritative, reassuring. Do NOT ask for full card numbers or passwords.
             """,
-            tools=[
-                record_mood_and_energy,
-                record_objectives,
-                complete_checkin,
-            ],
+            tools=[lookup_customer, resolve_fraud_case],
         )
 
 # ======================================================
-# 🎬 ENTRYPOINT & INITIALIZATION
+# 🎬 ENTRYPOINT
 # ======================================================
 
 def prewarm(proc: JobProcess):
@@ -220,38 +336,19 @@ def prewarm(proc: JobProcess):
 async def entrypoint(ctx: JobContext):
     ctx.log_context_fields = {"room": ctx.room.name}
 
-    print("\n" + "🌿" * 25)
-    print("🚀 STARTING WELLNESS SESSION")
-    print("👨‍⚕️ Tutorial by Akhil Chand Ramola")
+    print("\n" + "💼" * 25)
+    print("🚀 STARTING FRAUD ALERT SESSION")
     
-    # 1. Load History from JSON
-    history = load_history()
-    history_summary = "No previous history found. This is the first session."
-    
-    if history:
-        last_entry = history[-1]
-        history_summary = (
-            f"Last check-in was on {last_entry.get('timestamp', 'unknown date')}. "
-            f"User felt {last_entry.get('mood')} with {last_entry.get('energy')} energy. "
-            f"Their goals were: {', '.join(last_entry.get('objectives', []))}."
-        )
-        print("📜 HISTORY LOADED:", history_summary)
-    else:
-        print("📜 NO HISTORY FOUND.")
+    # 1. Initialize State
+    userdata = Userdata()
 
-    # 2. Initialize Session Data
-    userdata = Userdata(
-        current_checkin=CheckInState(),
-        history_summary=history_summary
-    )
-
-    # 3. Setup Agent
+    # 2. Setup Agent
     session = AgentSession(
         stt=deepgram.STT(model="nova-3"),
-        llm=google.LLM(model="gemini-2.5-flash"),
+        llm=google.LLM(model="gemini-2.5-flash"), # Ensure you have access to this model version
         tts=murf.TTS(
-            voice="en-US-natalie", # Using a softer, more caring voice
-            style="Promo",         # Often sounds more enthusiastic/supportive
+            voice="en-US-marcus", # A serious, professional male voice
+            style="Conversational",        
             text_pacing=True,
         ),
         turn_detection=MultilingualModel(),
@@ -259,9 +356,9 @@ async def entrypoint(ctx: JobContext):
         userdata=userdata,
     )
     
-    # 4. Start
+    # 3. Start
     await session.start(
-        agent=WellnessAgent(history_context=history_summary),
+        agent=FraudAgent(),
         room=ctx.room,
         room_input_options=RoomInputOptions(
             noise_cancellation=noise_cancellation.BVC()
