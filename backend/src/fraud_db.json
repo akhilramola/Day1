@@ -1,0 +1,123 @@
+[
+    {
+        "userName": "Michael",
+        "securityIdentifier": "44521",
+        "cardEnding": "3344",
+        "transactionName": "Mega Electronics Co.",
+        "transactionAmount": "$799.99",
+        "transactionTime": "2025-11-21 13:47:22 EST",
+        "transactionSource": "megastore.com",
+        "case_status": "confirmed_safe",
+        "notes": "User confirmed the transaction of $799.99 at Mega Electronics Co. was legitimate."
+    },
+    {
+        "userName": "Priya",
+        "securityIdentifier": "77003",
+        "cardEnding": "5566",
+        "transactionName": "LuxuryFashions Ltd.",
+        "transactionAmount": "$1,250.00",
+        "transactionTime": "2025-11-22 09:05:10 GMT",
+        "transactionSource": "luxfashions.com",
+        "case_status": "pending_review",
+        "notes": "Automated flag: International merchant."
+    },
+    {
+        "userName": "Ravi",
+        "securityIdentifier": "22334",
+        "cardEnding": "7788",
+        "transactionName": "Global Travel Agency",
+        "transactionAmount": "$3,499.50",
+        "transactionTime": "2025-11-23 22:30:45 PST",
+        "transactionSource": "globaltravel.com",
+        "case_status": "pending_review",
+        "notes": "Automated flag: Unusual travel-booking transaction."
+    },
+    {
+        "userName": "John",
+        "securityIdentifier": "12345",
+        "cardEnding": "4242",
+        "transactionName": "ABC Industry",
+        "transactionAmount": "$450.00",
+        "transactionTime": "2:30 AM EST",
+        "transactionSource": "alibaba.com",
+        "case_status": "pending_review",
+        "notes": "Automated flag: High value transaction."
+    },
+    {
+        "userName": "Sarah",
+        "securityIdentifier": "99887",
+        "cardEnding": "1199",
+        "transactionName": "Unknown Crypto Exchange",
+        "transactionAmount": "$2,100.00",
+        "transactionTime": "4:15 AM PST",
+        "transactionSource": "online_transfer",
+        "case_status": "pending_review",
+        "notes": "Automated flag: Unusual location."
+    },
+    {
+        "userName": "Aisha",
+        "securityIdentifier": "88990",
+        "cardEnding": "9900",
+        "transactionName": "Online Gaming Zone",
+        "transactionAmount": "$299.99",
+        "transactionTime": "2025-11-24 18:12:55 EST",
+        "transactionSource": "gamingzone.net",
+        "case_status": "pending_review",
+        "notes": "Automated flag: Suspicious merchant category."
+    },
+    {
+        "userName": "David",
+        "securityIdentifier": "55667",
+        "cardEnding": "1122",
+        "transactionName": "Furniture World",
+        "transactionAmount": "$540.75",
+        "transactionTime": "2025-11-25 11:20:30 GMT",
+        "transactionSource": "furnitureworld.com",
+        "case_status": "pending_review",
+        "notes": "Automated flag: Large furniture purchase."
+    },
+    {
+        "userName": "Neha",
+        "securityIdentifier": "33445",
+        "cardEnding": "2233",
+        "transactionName": "Digital Books Store",
+        "transactionAmount": "$45.99",
+        "transactionTime": "2025-11-26 07:45:00 PST",
+        "transactionSource": "ebooks-online.com",
+        "case_status": "pending_review",
+        "notes": "Automated flag: Frequent small-value purchases."
+    },
+    {
+        "userName": "Arjun",
+        "securityIdentifier": "66778",
+        "cardEnding": "3345",
+        "transactionName": "Sports Gear Hub",
+        "transactionAmount": "$149.49",
+        "transactionTime": "2025-11-26 15:30:20 EST",
+        "transactionSource": "sportshub.com",
+        "case_status": "pending_review",
+        "notes": "Automated flag: New merchant unfamiliar."
+    },
+    {
+        "userName": "Meena",
+        "securityIdentifier": "11223",
+        "cardEnding": "4455",
+        "transactionName": "Health Supplements Inc.",
+        "transactionAmount": "$89.00",
+        "transactionTime": "2025-11-27 08:10:05 GMT",
+        "transactionSource": "healthsupps.store",
+        "case_status": "pending_review",
+        "notes": "Automated flag: Unusual purchase pattern."
+    },
+    {
+        "userName": "Raj",
+        "securityIdentifier": "99001",
+        "cardEnding": "6677",
+        "transactionName": "Electronics MegaStore",
+        "transactionAmount": "$2,999.99",
+        "transactionTime": "2025-11-27 20:55:50 PST",
+        "transactionSource": "electromega.com",
+        "case_status": "pending_review",
+        "notes": "Automated flag: High-value electronics purchase."
+    }
+]
