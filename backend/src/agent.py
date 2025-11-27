@@ -1,18 +1,17 @@
 # ======================================================
-# 🏦 DAY 6: BANK FRAUD ALERT AGENT
-# 🛡️ "Global Bank" - Fraud Detection & Resolution
-# 🚀 Features: Identity Verification, Database Lookup, Status Updates
+# 🏦 DAY 6: BANK FRAUD ALERT AGENT (SQLite DB variant)
+# 🛡️ "Dr Abhishek Bank" - Fraud Detection & Resolution (sqlite backend)
 # ======================================================
 
 import logging
-import json
 import os
+import sqlite3
 from datetime import datetime
-from typing import Annotated, Optional, List
-from dataclasses import dataclass, asdict
+from typing import Annotated, Optional
+from dataclasses import dataclass
 
 print("\n" + "🛡️" * 50)
-print("🚀 BANK FRAUD AGENT BY DR DANGER - INITIALIZED")
+print("🚀 BANK FRAUD AGENT (SQLite) - INITIALIZED")
 print("📚 TASKS: Verify Identity -> Check Transaction -> Update DB")
 print("🛡️" * 50 + "\n")
 
@@ -30,7 +29,6 @@ from livekit.agents import (
     RunContext,
 )
 
-# 🔌 PLUGINS
 from livekit.plugins import murf, silero, google, deepgram, noise_cancellation
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
@@ -38,12 +36,11 @@ logger = logging.getLogger("agent")
 load_dotenv(".env.local")
 
 # ======================================================
-# 💾 1. DATABASE SETUP (Mock Data)
+# 💾 1. DATABASE SETUP (SQLite)
 # ======================================================
 
-DB_FILE = "fraud_db.json"
+DB_FILE = "fraud_db.sqlite"
 
-# Schema as requested
 @dataclass
 class FraudCase:
     userName: str
@@ -53,142 +50,73 @@ class FraudCase:
     transactionAmount: str
     transactionTime: str
     transactionSource: str
-    # Internal status fields
-    case_status: str = "pending_review"  # pending_review, confirmed_safe, confirmed_fraud
+    case_status: str = "pending_review"
     notes: str = ""
 
+
+def get_db_path():
+    return os.path.join(os.path.dirname(__file__), DB_FILE)
+
+
+def get_conn():
+    path = get_db_path()
+    conn = sqlite3.connect(path, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
 def seed_database():
-    """Creates a sample database if one doesn't exist."""
-    path = os.path.join(os.path.dirname(__file__), DB_FILE)
-    if not os.path.exists(path):
-        sample_data = [
-            
-            {
-                "userName": "Michael",
-                "securityIdentifier": "44521",
-                "cardEnding": "3344",
-                "transactionName": "Mega Electronics Co.",
-                "transactionAmount": "$799.99",
-                "transactionTime": "2025-11-21 13:47:22 EST",
-                "transactionSource": "megastore.com",
-                "case_status": "pending_review",
-                "notes": "Automated flag: High-value e-commerce purchase."
-            },
-            {
-                "userName": "Priya",
-                "securityIdentifier": "77003",
-                "cardEnding": "5566",
-                "transactionName": "LuxuryFashions Ltd.",
-                "transactionAmount": "$1,250.00",
-                "transactionTime": "2025-11-22 09:05:10 GMT",
-                "transactionSource": "luxfashions.com",
-                "case_status": "pending_review",
-                "notes": "Automated flag: International merchant."
-            },
-            {
-                "userName": "Ravi",
-                "securityIdentifier": "22334",
-                "cardEnding": "7788",
-                "transactionName": "Global Travel Agency",
-                "transactionAmount": "$3,499.50",
-                "transactionTime": "2025-11-23 22:30:45 PST",
-                "transactionSource": "globaltravel.com",
-                "case_status": "pending_review",
-                "notes": "Automated flag: Unusual travel-booking transaction."
-            },
-            {
-                "userName": "John",
-                "securityIdentifier": "12345",
-                "cardEnding": "4242",
-                "transactionName": "ABC Industry",
-                "transactionAmount": "$450.00",
-                "transactionTime": "2:30 AM EST",
-                "transactionSource": "alibaba.com",
-                "case_status": "pending_review",
-                "notes": "Automated flag: High value transaction."
-            },
-            {
-                "userName": "Sarah",
-                "securityIdentifier": "99887",
-                "cardEnding": "1199",
-                "transactionName": "Unknown Crypto Exchange",
-                "transactionAmount": "$2,100.00",
-                "transactionTime": "4:15 AM PST",
-                "transactionSource": "online_transfer",
-                "case_status": "pending_review",
-                "notes": "Automated flag: Unusual location."
-            },
-            {
-                "userName": "Aisha",
-                "securityIdentifier": "88990",
-                "cardEnding": "9900",
-                "transactionName": "Online Gaming Zone",
-                "transactionAmount": "$299.99",
-                "transactionTime": "2025-11-24 18:12:55 EST",
-                "transactionSource": "gamingzone.net",
-                "case_status": "pending_review",
-                "notes": "Automated flag: Suspicious merchant category."
-            },
-            {
-                "userName": "David",
-                "securityIdentifier": "55667",
-                "cardEnding": "1122",
-                "transactionName": "Furniture World",
-                "transactionAmount": "$540.75",
-                "transactionTime": "2025-11-25 11:20:30 GMT",
-                "transactionSource": "furnitureworld.com",
-                "case_status": "pending_review",
-                "notes": "Automated flag: Large furniture purchase."
-            },
-            {
-                "userName": "Neha",
-                "securityIdentifier": "33445",
-                "cardEnding": "2233",
-                "transactionName": "Digital Books Store",
-                "transactionAmount": "$45.99",
-                "transactionTime": "2025-11-26 07:45:00 PST",
-                "transactionSource": "ebooks-online.com",
-                "case_status": "pending_review",
-                "notes": "Automated flag: Frequent small-value purchases."
-            },
-            {
-                "userName": "Arjun",
-                "securityIdentifier": "66778",
-                "cardEnding": "3345",
-                "transactionName": "Sports Gear Hub",
-                "transactionAmount": "$149.49",
-                "transactionTime": "2025-11-26 15:30:20 EST",
-                "transactionSource": "sportshub.com",
-                "case_status": "pending_review",
-                "notes": "Automated flag: New merchant unfamiliar."
-            },
-            {
-                "userName": "Meena",
-                "securityIdentifier": "11223",
-                "cardEnding": "4455",
-                "transactionName": "Health Supplements Inc.",
-                "transactionAmount": "$89.00",
-                "transactionTime": "2025-11-27 08:10:05 GMT",
-                "transactionSource": "healthsupps.store",
-                "case_status": "pending_review",
-                "notes": "Automated flag: Unusual purchase pattern."
-            },
-            {
-                "userName": "Raj",
-                "securityIdentifier": "99001",
-                "cardEnding": "6677",
-                "transactionName": "Electronics MegaStore",
-                "transactionAmount": "$2,999.99",
-                "transactionTime": "2025-11-27 20:55:50 PST",
-                "transactionSource": "electromega.com",
-                "case_status": "pending_review",
-                "notes": "Automated flag: High-value electronics purchase."
-            }
-           
-        ]
-        with open(path, "w", encoding='utf-8') as f:
-            json.dump(sample_data, f, indent=4)
-        print(f"✅ Database seeded at {DB_FILE}")
+    """Create SQLite DB and insert sample rows if empty."""
+    conn = get_conn()
+    cur = conn.cursor()
+
+    # ✅ FIXED SQL — CLEAN, NO BROKEN LINES
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS fraud_cases (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            userName TEXT NOT NULL,
+            securityIdentifier TEXT,
+            cardEnding TEXT,
+            transactionName TEXT,
+            transactionAmount TEXT,
+            transactionTime TEXT,
+            transactionSource TEXT,
+            case_status TEXT DEFAULT 'pending_review',
+            notes TEXT DEFAULT '',
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now'))
+        )
+        """
+    )
+
+    cur.execute("SELECT COUNT(1) FROM fraud_cases")
+    if cur.fetchone()[0] == 0:
+        sample_data = [('Michael', '44521', '3344', 'Mega Electronics Co.', '$799.99', '2025-11-21 13:47:22 EST', 'megastore.com', 'confirmed_safe', 'User confirmed the transaction of $799.99 at Mega Electronics Co. was legitimate.'),
+  ('Priya', '77003', '5566', 'LuxuryFashions Ltd.', '$1,250.00', '2025-11-22 09:05:10 GMT', 'luxfashions.com', 'confirmed_fraud', 'User confirmed transaction was fraudulent. Initiated card block.'),
+  ('Ravi', '22334', '7788', 'Global Travel Agency', '$3,499.50', '2025-11-23 22:30:45 PST', 'globaltravel.com', 'pending_review', 'Automated flag: Unusual travel-booking transaction.'),
+  ('John', '12345', '4242', 'ABC Industry', '$450.00', '2:30 AM EST', 'alibaba.com', 'pending_review', 'Automated flag: High value transaction.'),
+  ('Sarah', '99887', '1199', 'Unknown Crypto Exchange', '$2,100.00', '4:15 AM PST', 'online_transfer', 'pending_review', 'Automated flag: Unusual location.'),
+  ('Aisha', '88990', '9900', 'Online Gaming Zone', '$299.99', '2025-11-24 18:12:55 EST', 'gamingzone.net', 'pending_review', 'Automated flag: Suspicious merchant category.'),
+  ('David', '55667', '1122', 'Furniture World', '$540.75', '2025-11-25 11:20:30 GMT', 'furnitureworld.com', 'pending_review', 'Automated flag: Large furniture purchase.'),
+  ('Neha', '33445', '2233', 'Digital Books Store', '$45.99', '2025-11-26 07:45:00 PST', 'ebooks-online.com', 'pending_review', 'Automated flag: Frequent small-value purchases.'),
+  ('Arjun', '66778', '3345', 'Sports Gear Hub', '$149.49', '2025-11-26 15:30:20 EST', 'sportshub.com', 'pending_review', 'Automated flag: New merchant unfamiliar.'),
+  ('Meena', '11223', '4455', 'Health Supplements Inc.', '$89.00', '2025-11-27 08:10:05 GMT', 'healthsupps.store', 'pending_review', 'Automated flag: Unusual purchase pattern.'),
+  ('Raj', '99001', '6677', 'Electronics MegaStore', '$2,999.99', '2025-11-27 20:55:50 PST', 'electromega.com', 'pending_review', 'Automated flag: High-value electronics purchase.')]
+        cur.executemany(
+            """
+            INSERT INTO fraud_cases (
+                userName, securityIdentifier, cardEnding, transactionName,
+                transactionAmount, transactionTime, transactionSource, case_status, notes
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            sample_data,
+        )
+        conn.commit()
+        print(f"✅ SQLite DB seeded at {DB_FILE}")
+
+    conn.close()
+
 
 # Initialize DB on load
 seed_database()
@@ -199,87 +127,104 @@ seed_database()
 
 @dataclass
 class Userdata:
-    # Holds the specific case currently being discussed
     active_case: Optional[FraudCase] = None
 
 # ======================================================
-# 🛠️ 3. FRAUD AGENT TOOLS
+# 🛠️ 3. FRAUD AGENT TOOLS (SQLite-backed)
 # ======================================================
 
 @function_tool
 async def lookup_customer(
     ctx: RunContext[Userdata],
-    name: Annotated[str, Field(description="The name the user provides")]
+    name: Annotated[str, Field(description="The name the user provides")],
 ) -> str:
-    """
-    🔍 Looks up a customer in the fraud database by name.
-    Call this immediately when the user says their name.
-    """
+    """Lookup a customer in SQLite DB."""
     print(f"🔎 LOOKING UP: {name}")
-    path = os.path.join(os.path.dirname(__file__), DB_FILE)
-    
     try:
-        with open(path, "r") as f:
-            data = json.load(f)
-            
-        # Case-insensitive search
-        found_record = next((item for item in data if item["userName"].lower() == name.lower()), None)
-        
-        if found_record:
-            # Load into session state
-            ctx.userdata.active_case = FraudCase(**found_record)
-            
-            # Return info to the LLM so it can verify the user
-            return (f"Record Found. \n"
-                    f"User: {found_record['userName']}\n"
-                    f"Security ID (Expected): {found_record['securityIdentifier']}\n"
-                    f"Transaction Details: {found_record['transactionAmount']} at {found_record['transactionName']} ({found_record['transactionSource']})\n"
-                    f"Instructions: Ask the user for their 'Security Identifier' to verify identity before discussing the transaction.")
-        else:
-            return "User not found in the fraud database. Ask them to repeat the name or contact support manually."
-            
+        conn = get_conn()
+        cur = conn.cursor()
+
+        cur.execute(
+            "SELECT * FROM fraud_cases WHERE LOWER(userName) = LOWER(?) LIMIT 1",
+            (name,),
+        )
+        row = cur.fetchone()
+        conn.close()
+
+        if not row:
+            return "User not found in the fraud database. Please repeat the name."
+
+        record = dict(row)
+        ctx.userdata.active_case = FraudCase(
+            userName=record["userName"],
+            securityIdentifier=record["securityIdentifier"],
+            cardEnding=record["cardEnding"],
+            transactionName=record["transactionName"],
+            transactionAmount=record["transactionAmount"],
+            transactionTime=record["transactionTime"],
+            transactionSource=record["transactionSource"],
+            case_status=record["case_status"],
+            notes=record["notes"],
+        )
+
+        return (
+            f"Record Found.\n"
+            f"User: {record['userName']}\n"
+            f"Security ID (Expected): {record['securityIdentifier']}\n"
+            f"Transaction: {record['transactionAmount']} at {record['transactionName']} ({record['transactionSource']})\n"
+            f"Ask user for their Security Identifier now."
+        )
+
     except Exception as e:
         return f"Database error: {str(e)}"
+
 
 @function_tool
 async def resolve_fraud_case(
     ctx: RunContext[Userdata],
-    status: Annotated[str, Field(description="The final status: 'confirmed_safe' or 'confirmed_fraud'")],
-    notes: Annotated[str, Field(description="A brief summary of the user's response")]
+    status: Annotated[str, Field(description="confirmed_safe or confirmed_fraud")],
+    notes: Annotated[str, Field(description="Notes on the user's confirmation")],
 ) -> str:
-    """
-    💾 Saves the result of the investigation to the database.
-    Call this after the user confirms or denies the transaction.
-    """
+
     if not ctx.userdata.active_case:
         return "Error: No active case selected."
 
-    # Update local object
     case = ctx.userdata.active_case
     case.case_status = status
     case.notes = notes
-    
-    # Update Database File
-    path = os.path.join(os.path.dirname(__file__), DB_FILE)
+
     try:
-        with open(path, "r") as f:
-            data = json.load(f)
-        
-        # Find index and update
-        for i, item in enumerate(data):
-            if item["userName"] == case.userName:
-                data[i] = asdict(case)
-                break
-        
-        with open(path, "w") as f:
-            json.dump(data, f, indent=4)
-            
+        conn = get_conn()
+        cur = conn.cursor()
+
+        cur.execute(
+            """
+            UPDATE fraud_cases
+            SET case_status = ?, notes = ?, updated_at = datetime('now')
+            WHERE userName = ?
+            """,
+            (case.case_status, case.notes, case.userName),
+        )
+        conn.commit()
+
+        # Confirm updated row
+        cur.execute("SELECT * FROM fraud_cases WHERE userName = ?", (case.userName,))
+        updated_row = dict(cur.fetchone())
+        conn.close()
+
         print(f"✅ CASE UPDATED: {case.userName} -> {status}")
-        
+
         if status == "confirmed_fraud":
-            return "Case updated as FRAUD. Inform the user: Card ending in " + case.cardEnding + " is now blocked. A new card will be mailed."
+            return (
+                f"Fraud confirmed. Card ending {case.cardEnding} is now BLOCKED. "
+                f"A replacement card will be issued.\n"
+                f"DB Updated At: {updated_row['updated_at']}"
+            )
         else:
-            return "Case updated as SAFE. Inform the user: The restriction has been lifted. Thank you for verifying."
+            return (
+                f"Transaction marked SAFE. Restrictions lifted.\n"
+                f"DB Updated At: {updated_row['updated_at']}"
+            )
 
     except Exception as e:
         return f"Error saving to DB: {e}"
@@ -292,36 +237,18 @@ class FraudAgent(Agent):
     def __init__(self):
         super().__init__(
             instructions="""
-            You are 'Alex', a Fraud Detection Specialist at Global Bank. 
-            Your job is to verify a suspicious transaction with the customer efficiently and professionally.
+            You are 'Alex', a Fraud Detection Specialist at Dr Abhishek Bank.
+            Follow strict security protocol:
 
-            🛡️ **SECURITY PROTOCOL (FOLLOW STRICTLY):**
-            
-            1. **GREETING & ID:** - State that you are calling about a "security alert".
-               - Ask: "Am I speaking with the account holder? May I have your first name?"
-            
-            2. **LOOKUP:**
-               - Use tool `lookup_customer` immediately when you hear the name.
-            
-            3. **VERIFICATION:**
-               - Once the record is loaded, ask for their **Security Identifier**.
-               - Compare their answer to the data returned by the tool.
-               - IF WRONG: Politely apologize and disconnect (pretend to end call).
-               - IF CORRECT: Proceed.
-            
-            4. **TRANSACTION REVIEW:**
-               - Read the transaction details clearly: "We flagged a charge of [Amount] at [Merchant] on [Time]."
-               - Ask: "Did you make this transaction?"
-            
-            5. **RESOLUTION:**
-               - **If User Says YES (Legit):** Use tool `resolve_fraud_case(status='confirmed_safe')`.
-               - **If User Says NO (Fraud):** Use tool `resolve_fraud_case(status='confirmed_fraud')`.
-            
-            6. **CLOSING:**
-               - Confirm the action taken (Card blocked OR Unblocked).
-               - Say goodbye professionally.
-
-            ⚠️ **TONE:** Calm, authoritative, reassuring. Do NOT ask for full card numbers or passwords.
+            1. Greeting + ask for first name.
+            2. Immediately call lookup_customer(name).
+            3. Ask for Security Identifier.
+            4. If correct → continue. If incorrect → end call politely.
+            5. Explain suspicious transaction.
+            6. Ask: Did you make this transaction?
+               - YES → resolve_fraud_case('confirmed_safe')
+               - NO → resolve_fraud_case('confirmed_fraud')
+            7. Close professionally.
             """,
             tools=[lookup_customer, resolve_fraud_case],
         )
@@ -333,39 +260,36 @@ class FraudAgent(Agent):
 def prewarm(proc: JobProcess):
     proc.userdata["vad"] = silero.VAD.load()
 
+
 async def entrypoint(ctx: JobContext):
     ctx.log_context_fields = {"room": ctx.room.name}
 
     print("\n" + "💼" * 25)
-    print("🚀 STARTING FRAUD ALERT SESSION")
-    
-    # 1. Initialize State
+    print("🚀 STARTING FRAUD ALERT SESSION (SQLite)")
+
     userdata = Userdata()
 
-    # 2. Setup Agent
     session = AgentSession(
         stt=deepgram.STT(model="nova-3"),
-        llm=google.LLM(model="gemini-2.5-flash"), # Ensure you have access to this model version
+        llm=google.LLM(model="gemini-2.5-flash"),
         tts=murf.TTS(
-            voice="en-US-marcus", # A serious, professional male voice
-            style="Conversational",        
+            voice="en-US-marcus",
+            style="Conversational",
             text_pacing=True,
         ),
         turn_detection=MultilingualModel(),
         vad=ctx.proc.userdata["vad"],
         userdata=userdata,
     )
-    
-    # 3. Start
+
     await session.start(
         agent=FraudAgent(),
         room=ctx.room,
-        room_input_options=RoomInputOptions(
-            noise_cancellation=noise_cancellation.BVC()
-        ),
+        room_input_options=RoomInputOptions(noise_cancellation=noise_cancellation.BVC()),
     )
 
     await ctx.connect()
+
 
 if __name__ == "__main__":
     cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint, prewarm_fnc=prewarm))
