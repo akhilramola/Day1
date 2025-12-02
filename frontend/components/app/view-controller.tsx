@@ -58,11 +58,20 @@ export function ViewController() {
       {isSessionActive && (
         <MotionSessionView
           key="session-view"
-          {...VIEW_MOTION_PROPS}
+          {...{
+            ...VIEW_MOTION_PROPS,
+            transition: {
+              ...VIEW_MOTION_PROPS.transition,
+              // Fix for Framer Motion's expected 'ease' type (should be an array or a function)
+              ease: ['linear'],
+            }
+          }}
           appConfig={appConfig}
           onAnimationComplete={handleAnimationComplete}
         />
       )}
+        
+      
     </AnimatePresence>
   );
 }
