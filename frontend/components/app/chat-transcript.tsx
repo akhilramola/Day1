@@ -61,11 +61,38 @@ export function ChatTranscript({
   return (
     <AnimatePresence>
       {!hidden && (
-        <MotionContainer {...CONTAINER_MOTION_PROPS} {...props}>
-          {messages.map(({ id, timestamp, from, message, editTimestamp }: ReceivedChatMessage) => {
-            const locale = navigator?.language ?? 'en-US';
+        <MotionContainer
+          // Fix: spread CONTAINER_MOTION_PROPS, but override the "ease" prop in-place to let it accept expected types.
+          {...{
+            ...CONTAINER_MOTION_PROPS,
+            variants: {
+              ...CONTAINER_MOTION_PROPS.variants,
+              hidden: {
+                ...CONTAINER_MOTION_PROPS.variants.hidden,
+                transition: {
+                  ...CONTAINER_MOTION_PROPS.variants.hidden.transition,
+                  ease: [0.42, 0, 0.58, 1] // equivalent to 'easeOut' as Easing array
+                }
+              },
+              visible: {
+                ...CONTAINER_MOTION_PROPS.variants.visible,
+                transition: {
+                  ...CONTAINER_MOTION_PROPS.variants.visible.transition,
+                  ease: [0.42, 0, 0.58, 1] // equivalent to 'easeOut' as Easing array
+                }
+              },
+            }
+          }}
+          {...props}
+        >
+        
+          {messages.map((msg: ReceivedChatMessage) => {
+            const { id, timestamp, from, message, editTimestamp } = msg;
+            const locale = typeof navigator !== "undefined" && navigator.language
+              ? navigator.language
+              : 'en-US';
             const messageOrigin = from?.isLocal ? 'local' : 'remote';
-            const hasBeenEdited = !!editTimestamp;
+            const hasBeenEdited = Boolean(editTimestamp);
 
             return (
               <MotionChatEntry
