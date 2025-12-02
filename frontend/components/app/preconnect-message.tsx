@@ -40,15 +40,35 @@ export function PreConnectMessage({ className, messages = [] }: PreConnectMessag
   return (
     <AnimatePresence>
       {messages.length === 0 && (
-        <MotionMessage
-          {...VIEW_MOTION_PROPS}
+        <motion.p
+          variants={{
+            visible: {
+              opacity: 1,
+              transition: {
+                ease: [0.42, 0, 1, 1], // Equivalent to 'easeIn'
+                duration: 0.5,
+                delay: 0.8,
+              },
+            },
+            hidden: {
+              opacity: 0,
+              transition: {
+                ease: [0.42, 0, 1, 1],
+                duration: 0.5,
+                delay: 0,
+              },
+            },
+          }}
+          initial="hidden"
+          animate="visible"
+          exit="hidden"
           aria-hidden={messages.length > 0}
           className={cn('pointer-events-none text-center', className)}
         >
           <ShimmerText className="text-sm font-semibold">
-            Agent is listening, ask it a question
+            Host is listening, show your talent
           </ShimmerText>
-        </MotionMessage>
+        </motion.p>
       )}
     </AnimatePresence>
   );
